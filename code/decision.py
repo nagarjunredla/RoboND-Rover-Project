@@ -25,20 +25,25 @@ def decision_step(Rover):
                     Rover.throttle = 0
                 Rover.brake = 0
                 # Set steering to average angle clipped to the range +/- 15
-                Rover.steer = np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15)
-            # If there's a lack of navigable terrain pixels then go to 'stop' mode
-            elif len(Rover.nav_angles) < Rover.stop_forward:
-                    # Set mode to "stop" and hit the brakes!
-                    Rover.throttle = 0
-                    # Set brake to stored brake value
-                    Rover.brake = Rover.brake_set
-                    Rover.steer = 0
-                    Rover.mode = 'stop'
+                mean_angle = np.mean(Rover.nav_angles * 180/np.pi)
+                if mean_angle < -10:
+                    Rover.steer = np.clip(np.mean(Rover.nav_angles * 180/np.pi) + 2, -15, 15)
+                else:
+                    Rover.steer = np.clip(np.mean(Rover.nav_angles * 180/np.pi) + 10, -15, 15)
+
+        # If there's a lack of navigable terrain pixels then go to 'stop' mode
+        elif len(Rover.nav_angles) < Rover.stop_forward:
+            # Set mode to "stop" and hit the brakes!
+            Rover.throttle = 0
+            # Set brake to stored brake value
+            Rover.brake = Rover.brake_set
+            Rover.steer = 0
+            Rover.mode = 'stop'
 
         # If we're already in "stop" mode then make different decisions
         elif Rover.mode == 'stop':
             # If we're in stop mode but still moving keep braking
-            if Rover.vel > 0.2:
+            if Rover.vel > 0.2 or Rover.near_sample:
                 Rover.throttle = 0
                 Rover.brake = Rover.brake_set
                 Rover.steer = 0
@@ -58,8 +63,16 @@ def decision_step(Rover):
                     # Release the brake
                     Rover.brake = 0
                     # Set steer to mean angle
-                    Rover.steer = np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15)
+                    Rover.steer = np.clip(np.mean(Rover.nav_angles * 180/np.pi), -30, 30)
                     Rover.mode = 'forward'
+        # If there is a rock sample nearby then go to 'stop' mode
+        if Rover.near_sample:
+            # Set mode to "stop" and hit the brakes!
+            Rover.throttle = 0
+            # Set brake to stored brake value
+            Rover.brake = Rover.brake_set
+            Rover.steer = 0
+            Rover.mode = 'stop'
     # Just to make the rover do something 
     # even if no modifications have been made to the code
     else:
